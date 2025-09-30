@@ -40,40 +40,43 @@
 
   <script src="https://dl.frontapp.com/libs/plugin-sdk.js"></script>
   <script>
-    Front.contextUpdates.subscribe(context => {
+    console.log('Plugin loaded, waiting for Front SDK...');
+    
+    // Initialize Front plugin
+    Front.on('conversation', (data) => {
+      console.log('Conversation data received:', data);
+      
       const loadingEl = document.getElementById('loading');
       const errorEl = document.getElementById('error');
       const containerEl = document.getElementById('form-container');
       
-      console.log('Context received:', context);
-      
       try {
-        // Check if we have a conversation
-        if (!context.conversation) {
-          throw new Error('No conversation selected');
-        }
-
-        // Look for fillout.com link in the conversation context
+        // Look for fillout.com link in conversation data
         let filloutUrl = null;
 
-        // Check if links are in the context
-        if (context.conversation.links && context.conversation.links.length > 0) {
-          console.log('Found links:', context.conversation.links);
-          
-          const filloutLink = context.conversation.links.find(link => 
-            link.external_url && link.external_url.includes('fillout.com')
-          );
-          
-          if (filloutLink) {
-            filloutUrl = filloutLink.external_url;
-          }
+        if (data && data.contact && data.contact.links) {
+          console.log('Checking contact links:', data.contact.links);
+          const link = data.contact.links.find(l => l.includes && l.includes('fillout.com'));
+          if (link) filloutUrl = link;
+        }
+
+        if (data && data.conversation && data.conversation.tags) {
+          console.log('Checking conversation tags:', data.conversation.tags);
+          // Sometimes links appear in tags
+          const tag = data.conversation.tags.find(t => t.name && t.name.includes('fillout.com'));
+          if (tag && tag.name) filloutUrl = tag.name;
+        }
+
+        // Check for any property that might contain the URL
+        if (data && data.conversation) {
+          console.log('Full conversation object:', data.conversation);
         }
 
         if (!filloutUrl) {
-          throw new Error('No fillout.com form attached to this conversation. Please add the fillout URL to the conversation first.');
+          throw new Error('No fillout.com form found. Please attach the fillout URL to this conversation.');
         }
 
-        console.log('Loading URL:', filloutUrl);
+        console.log('Loading form URL:', filloutUrl);
 
         // Display the form
         loadingEl.style.display = 'none';
