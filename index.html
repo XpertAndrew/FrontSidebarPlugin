@@ -2,19 +2,74 @@
 <html>
 <head>
     <script src="https://dl.frontapp.com/libs/frontjs.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            overflow: hidden;
+        }
+        iframe { 
+            border: none;
+            width: 100%;
+            height: 100vh;
+        }
+        #content { 
+            height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .message {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-    <h1>Plugin Loaded Successfully!</h1>
-    <div id="debug"></div>
+    <div id="content">
+        <div class="message">Loading...</div>
+    </div>
     
     <script>
-        document.getElementById('debug').innerHTML = '<p>Front SDK loading...</p>';
-        
         Front.contextUpdates.subscribe(context => {
-            document.getElementById('debug').innerHTML = 
-                '<p>✅ Connected to Front!</p>' +
-                '<p>Context received</p>' +
-                '<pre>' + JSON.stringify(context, null, 2) + '</pre>';
+            const conversation = context.conversation;
+            
+            console.log('Context received:', context);
+            console.log('Custom objects:', conversation.customObjects);
+            
+            // Find the "Get Loan Number" object
+            const loanObject = conversation.customObjects?.find(obj => 
+                obj.type === 'Get Loan Number'
+            );
+            
+            if (loanObject) {
+                console.log('Loan object found:', loanObject);
+                
+                // Since "Tasks Form" is set as Target URL, it should be in targetUrl
+                const taskUrl = loanObject.targetUrl || loanObject.fields?.['Tasks Form'];
+                
+                console.log('Task URL:', taskUrl);
+                
+                if (taskUrl) {
+                    // Display the form in an iframe
+                    document.getElementById('content').innerHTML = 
+                        `<iframe src="${taskUrl}"></iframe>`;
+                } else {
+                    document.getElementById('content').innerHTML = 
+                        `<div class="message">
+                            <p>Loan object found but no Tasks Form URL available</p>
+                            <p><small>Check console for details</small></p>
+                        </div>`;
+                }
+            } else {
+                document.getElementById('content').innerHTML = 
+                    `<div class="message">
+                        <p>No loan number detected in this conversation</p>
+                        <p><small>Make sure the email subject contains a 10-digit loan number starting with 152</small></p>
+                    </div>`;
+            }
         });
     </script>
 </body>
