@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://dl.frontapp.com/libs/frontjs.min.js"></script>
+    <script type="text/javascript" src="https://dl.frontapp.com/libs/plugin-sdk-1.8.1.min.js"></script>
     <style>
         body { 
             margin: 0; 
@@ -19,66 +19,31 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
         }
         .message {
             padding: 20px;
             text-align: center;
             color: #666;
         }
-        pre {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            max-width: 90%;
-            overflow: auto;
-            text-align: left;
-            font-size: 11px;
-        }
     </style>
 </head>
 <body>
     <div id="content">
-        <div class="message">Initializing plugin...</div>
+        <div class="message">Loading...</div>
     </div>
     
     <script>
-        console.log('Plugin script starting...');
-        console.log('Front object available:', typeof Front !== 'undefined');
+        console.log('Plugin starting...');
+        console.log('Front available:', typeof Front !== 'undefined');
+        console.log('Front.contextUpdates:', Front.contextUpdates);
         
-        // Wait for Front to be fully loaded
-        window.addEventListener('load', function() {
-            console.log('Window loaded, initializing Front...');
+        Front.contextUpdates.subscribe(context => {
+            console.log('Context received:', context);
             
-            if (typeof Front === 'undefined') {
-                document.getElementById('content').innerHTML = 
-                    '<div class="message"><p>⚠️ Front SDK not loaded</p></div>';
-                return;
-            }
-            
-            // Initialize Front
-            Front.contextUpdates.subscribe(context => {
-                console.log('=== CONTEXT UPDATE RECEIVED ===');
-                console.log('Full context:', context);
-                
+            if (context.type === 'singleConversation') {
                 const conversation = context.conversation;
                 console.log('Conversation:', conversation);
-                console.log('Custom objects:', conversation?.customObjects);
-                
-                if (!conversation) {
-                    document.getElementById('content').innerHTML = 
-                        '<div class="message"><p>No conversation context available</p></div>';
-                    return;
-                }
-                
-                // Show debug info
-                const objectCount = conversation.customObjects?.length || 0;
-                document.getElementById('content').innerHTML = 
-                    `<div class="message">
-                        <p>✅ Plugin connected!</p>
-                        <p>Custom objects found: ${objectCount}</p>
-                        <pre>${JSON.stringify(conversation.customObjects, null, 2)}</pre>
-                    </div>`;
+                console.log('Custom objects:', conversation.customObjects);
                 
                 // Find the "Get Loan Number" object
                 const loanObject = conversation.customObjects?.find(obj => 
@@ -86,33 +51,30 @@
                 );
                 
                 if (loanObject) {
-                    console.log('=== LOAN OBJECT FOUND ===');
-                    console.log('Object:', loanObject);
-                    console.log('Target URL:', loanObject.targetUrl);
-                    console.log('Fields:', loanObject.fields);
+                    console.log('Loan object found:', loanObject);
                     
-                    // Get the URL from the object
                     const taskUrl = loanObject.targetUrl || loanObject.fields?.['Tasks Form'];
-                    
-                    console.log('Final task URL:', taskUrl);
+                    console.log('Task URL:', taskUrl);
                     
                     if (taskUrl) {
-                        // Display the form in an iframe
                         document.getElementById('content').innerHTML = 
                             `<iframe src="${taskUrl}"></iframe>`;
                     } else {
                         document.getElementById('content').innerHTML = 
                             `<div class="message">
-                                <p>Loan object found but no URL available</p>
-                                <pre>${JSON.stringify(loanObject, null, 2)}</pre>
+                                <p>Loan found but no URL available</p>
                             </div>`;
                     }
                 } else {
-                    console.log('No "Get Loan Number" object found');
+                    document.getElementById('content').innerHTML = 
+                        `<div class="message">
+                            <p>No loan number detected in this conversation</p>
+                        </div>`;
                 }
-            });
-            
-            console.log('Front.contextUpdates subscription setup complete');
+            } else if (context.type === 'noConversation') {
+                document.getElementById('content').innerHTML = 
+                    `<div class="message"><p>No conversation selected</p></div>`;
+            }
         });
     </script>
 </body>
